@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>OrderFlow.Inventory.Infrastructure</RootNamespace>
+    <AssemblyName>OrderFlow.Inventory.Infrastructure</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Inventory.Domain\OrderFlow.Inventory.Domain.csproj" />
+    <ProjectReference Include="..\..\BuildingBlocks\OrderFlow.BuildingBlocks.csproj" />
+  </ItemGroup>
+
+</Project>

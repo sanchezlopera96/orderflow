@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>OrderFlow.Inventory.Domain</RootNamespace>
+    <AssemblyName>OrderFlow.Inventory.Domain</AssemblyName>
+  </PropertyGroup>
+
+</Project>

@@ -1,0 +1,23 @@
+using FluentAssertions;
+using OrderFlow.Orders.Domain;
+using Xunit;
+
+namespace OrderFlow.Orders.Tests;
+
+public class OrderStatusTests
+{
+    [Fact]
+    public void Order_status_defines_exactly_the_three_lifecycle_states()
+    {
+        Enum.GetNames<OrderStatus>()
+            .Should()
+            .BeEquivalentTo("Pending", "Confirmed", "Rejected");
+    }
+
+    [Fact]
+    public void New_orders_conceptually_start_as_pending()
+    {
+        // Pending is the default (0) so a freshly-defaulted status is Pending.
+        default(OrderStatus).Should().Be(OrderStatus.Pending);
+    }
+}
