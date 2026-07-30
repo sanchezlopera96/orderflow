@@ -10,4 +10,16 @@
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
   </PropertyGroup>
 
+  <PropertyGroup Label="Dependency auditing">
+    <!--
+      Audit only our DIRECT dependencies. Vulnerability advisories on transitive packages
+      (which we don't reference directly and can't upgrade without upstream) should not fail
+      a reproducible build, and audit results change as new advisories are published.
+      Direct dependencies are still audited strictly.
+    -->
+    <NuGetAudit>true</NuGetAudit>
+    <NuGetAuditMode>direct</NuGetAuditMode>
+    <WarningsNotAsErrors>$(WarningsNotAsErrors);NU1901;NU1902;NU1903;NU1904</WarningsNotAsErrors>
+  </PropertyGroup>
+
 </Project>

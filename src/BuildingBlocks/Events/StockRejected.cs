@@ -1,6 +1,6 @@
 namespace OrderFlow.BuildingBlocks.Events;
 
-/// <summary>Published by Inventory when stock could not be reserved (e.g. insufficient stock).</summary>
+/// <summary>Publicado por Inventory cuando no se pudo reservar stock (por ejemplo, stock insuficiente).</summary>
 public sealed record StockRejected : IntegrationEvent
 {
     public required Guid OrderId { get; init; }

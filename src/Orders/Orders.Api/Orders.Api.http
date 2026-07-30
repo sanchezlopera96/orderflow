@@ -1,0 +1,34 @@
+@host = http://localhost:5080
+
+### Create a valid order (expect 201)
+POST {{host}}/orders
+Content-Type: application/json
+
+{ "customerName": "Ada Lovelace", "sku": "ABC-01", "quantity": 2 }
+
+### Invalid quantity (expect 400 with field errors)
+POST {{host}}/orders
+Content-Type: application/json
+
+{ "customerName": "Ada Lovelace", "sku": "ABC-01", "quantity": 0 }
+
+### Empty customer name (expect 400 with field errors)
+POST {{host}}/orders
+Content-Type: application/json
+
+{ "customerName": "", "sku": "ABC-01", "quantity": 1 }
+
+### Unknown SKU (expect 400 order.sku_not_found)
+POST {{host}}/orders
+Content-Type: application/json
+
+{ "customerName": "Ada Lovelace", "sku": "ZZZ-99", "quantity": 1 }
+
+### List all orders (expect 200)
+GET {{host}}/orders
+
+### Get one order by id (replace the guid; expect 200 or 404)
+GET {{host}}/orders/00000000-0000-0000-0000-000000000000
+
+### Health probe
+GET {{host}}/health

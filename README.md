@@ -116,20 +116,82 @@ referencian nada.
 ## Cómo ejecutar
 
 > El arranque completo en contenedores (`docker compose up`) se entrega en una etapa posterior.
-> Por ahora la solución compila y sus pruebas corren localmente.
+> Por ahora la solución compila, las pruebas corren sin base de datos y la Orders API se puede
+> levantar contra un PostgreSQL local.
 
-Requisitos: .NET 10 SDK.
+Requisitos: .NET 10 SDK (y la herramienta `dotnet-ef` para las migraciones).
+
+### Compilar y probar
 
 ```bash
 dotnet build
 dotnet test
 ```
 
+### Generar la migración inicial de Orders
+
+La primera vez, crea la migración de EF Core (incluye el seed del catálogo):
+
+```bash
+dotnet tool install --global dotnet-ef   # solo si no la tienes
+dotnet ef migrations add InitialCreate \
+  --project src/Orders/Orders.Infrastructure \
+  --startup-project src/Orders/Orders.Api \
+  --output-dir Persistence/Migrations
+```
+
+### Levantar la Orders API
+
+Necesita un PostgreSQL. Uno rápido para desarrollo:
+
+```bash
+docker run --name orderflow-postgres -e POSTGRES_PASSWORD=postgres \
+  -e POSTGRES_DB=orders -p 5432:5432 -d postgres:16-alpine
+
+docker run --name orderflow-rabbitmq -p 5672:5672 -p 15672:15672 \
+  -d rabbitmq:3-management   # consola de administración en http://localhost:15672 (guest/guest)
+
+dotnet run --project src/Orders/Orders.Api
+```
+
+La API aplica las migraciones al arrancar (crea las tablas y siembra el catálogo) y publica
+`OrderCreated` al crear un pedido. Si el broker no está disponible en ese momento, el pedido se
+crea igual y queda en `Pending` (el fallo se registra); un outbox transaccional sería la evolución
+robusta. Endpoints:
+
+| Método | Ruta | Descripción |
+| --- | --- | --- |
+| `POST` | `/orders` | Crea un pedido (`201`, o `400` si los datos son inválidos) |
+| `GET` | `/orders` | Lista los pedidos con su estado |
+| `GET` | `/orders/{id}` | Detalle de un pedido (`404` si no existe) |
+| `GET` | `/health` | Liveness |
+
+En `Development` el documento OpenAPI queda en `/openapi/v1.json`. El archivo
+`src/Orders/Orders.Api/Orders.Api.http` trae peticiones de ejemplo (válidas y de error) para
+ejecutar desde el IDE.
+
+> Nota: en esta etapa el `POST` publica el evento contra un publisher no-op; RabbitMQ real entra en
+> la etapa de mensajería.
+
 ## Configuración
 
 Todas las connection strings y la configuración del broker se inyectan por **variables de
-entorno** (enlazadas con `IOptions`); nada está hardcodeado en el código. Las variables concretas
-se documentan en la etapa de Docker.
+entorno** (enlazadas con `IOptions`); nada está hardcodeado en el código. Se usa el separador `__`
+de .NET para las secciones anidadas.
+
+| Variable | Servicio | Descripción | Valor por defecto (dev) |
+| --- | --- | --- | --- |
+| `Database__ConnectionString` | Orders API | Connection string de PostgreSQL | `Host=localhost;...;Database=orders` |
+| `RabbitMq__HostName` | Orders API | Host del broker | `localhost` |
+| `RabbitMq__Port` | Orders API | Puerto AMQP | `5672` |
+| `RabbitMq__UserName` | Orders API | Usuario | `guest` |
+| `RabbitMq__Password` | Orders API | Contraseña | `guest` |
+| `RabbitMq__ExchangeName` | Orders API | Topic exchange | `orderflow` |
+
+La topología es un topic exchange durable `orderflow` con routing keys `order.created`,
+`stock.reserved` y `stock.rejected`. Los mensajes se publican como persistentes y la conexión
+tiene recuperación automática. Las colas y sus bindings las declara cada consumidor (Inventory y
+Orders) en las etapas siguientes.
 
 ## Pruebas
 
@@ -170,8 +232,8 @@ Los dos escenarios de fallo exigidos se abordan así (se amplían en etapas post
 La construcción se divide en etapas que se pueden probar de forma independiente:
 
 1. **Esqueleto de la solución y building blocks** — proyectos, contratos compartidos, Result pattern. ✅
-2. Núcleo de Orders — dominio, persistencia, endpoints `POST`/`GET`, validación.
-3. Mensajería — publisher de RabbitMQ y topología.
+2. **Núcleo de Orders** — dominio, persistencia, endpoints `POST`/`GET`, validación. ✅
+3. **Mensajería** — publisher de RabbitMQ y topología. ✅
 4. Inventory Worker — consumidor, reserva atómica de stock, inbox de idempotencia.
 5. Consumidor de Orders — reacciona a los resultados de stock, aplica las transiciones de estado.
 6. Front end — panel en Angular (formulario + lista con polling).

@@ -17,7 +17,7 @@ public class OrderStatusTests
     [Fact]
     public void New_orders_conceptually_start_as_pending()
     {
-        // Pending is the default (0) so a freshly-defaulted status is Pending.
+        // Pending es el valor por defecto (0), así que un estado recién inicializado es Pending.
         default(OrderStatus).Should().Be(OrderStatus.Pending);
     }
 }

@@ -1,7 +1,7 @@
 namespace OrderFlow.Inventory.Domain;
 
 /// <summary>
-/// Marker for the Inventory domain assembly. The aggregate root (StockItem) and the inbox
-/// entity (ProcessedEvent) are introduced when the worker is implemented.
+/// Marcador del ensamblado de dominio de Inventory. La raíz del agregado (StockItem) y la entidad
+/// del inbox (ProcessedEvent) se introducen cuando se implementa el worker.
 /// </summary>
 public static class AssemblyReference;
