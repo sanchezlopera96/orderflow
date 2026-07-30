@@ -12,12 +12,13 @@
     <PackageReference Include="xunit" />
     <PackageReference Include="xunit.runner.visualstudio" />
     <PackageReference Include="FluentAssertions" />
+    <PackageReference Include="FluentValidation" />
     <PackageReference Include="coverlet.collector" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Orders\Orders.Domain\OrderFlow.Orders.Domain.csproj" />
-    <ProjectReference Include="..\..\src\Orders\Orders.Infrastructure\OrderFlow.Orders.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Orders\Orders.Api\OrderFlow.Orders.Api.csproj" />
   </ItemGroup>
 
 </Project>

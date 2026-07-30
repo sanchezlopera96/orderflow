@@ -116,14 +116,56 @@ referencian nada.
 ## Cómo ejecutar
 
 > El arranque completo en contenedores (`docker compose up`) se entrega en una etapa posterior.
-> Por ahora la solución compila y sus pruebas corren localmente.
+> Por ahora la solución compila, las pruebas corren sin base de datos y la Orders API se puede
+> levantar contra un PostgreSQL local.
 
-Requisitos: .NET 10 SDK.
+Requisitos: .NET 10 SDK (y la herramienta `dotnet-ef` para las migraciones).
+
+### Compilar y probar
 
 ```bash
 dotnet build
 dotnet test
 ```
+
+### Generar la migración inicial de Orders
+
+La primera vez, crea la migración de EF Core (incluye el seed del catálogo):
+
+```bash
+dotnet tool install --global dotnet-ef   # solo si no la tienes
+dotnet ef migrations add InitialCreate \
+  --project src/Orders/Orders.Infrastructure \
+  --startup-project src/Orders/Orders.Api \
+  --output-dir Persistence/Migrations
+```
+
+### Levantar la Orders API
+
+Necesita un PostgreSQL. Uno rápido para desarrollo:
+
+```bash
+docker run --name orderflow-postgres -e POSTGRES_PASSWORD=postgres \
+  -e POSTGRES_DB=orders -p 5432:5432 -d postgres:16-alpine
+
+dotnet run --project src/Orders/Orders.Api
+```
+
+La API aplica las migraciones al arrancar (crea las tablas y siembra el catálogo). Endpoints:
+
+| Método | Ruta | Descripción |
+| --- | --- | --- |
+| `POST` | `/orders` | Crea un pedido (`201`, o `400` si los datos son inválidos) |
+| `GET` | `/orders` | Lista los pedidos con su estado |
+| `GET` | `/orders/{id}` | Detalle de un pedido (`404` si no existe) |
+| `GET` | `/health` | Liveness |
+
+En `Development` el documento OpenAPI queda en `/openapi/v1.json`. El archivo
+`src/Orders/Orders.Api/Orders.Api.http` trae peticiones de ejemplo (válidas y de error) para
+ejecutar desde el IDE.
+
+> Nota: en esta etapa el `POST` publica el evento contra un publisher no-op; RabbitMQ real entra en
+> la etapa de mensajería.
 
 ## Configuración
 
@@ -170,7 +212,7 @@ Los dos escenarios de fallo exigidos se abordan así (se amplían en etapas post
 La construcción se divide en etapas que se pueden probar de forma independiente:
 
 1. **Esqueleto de la solución y building blocks** — proyectos, contratos compartidos, Result pattern. ✅
-2. Núcleo de Orders — dominio, persistencia, endpoints `POST`/`GET`, validación.
+2. **Núcleo de Orders** — dominio, persistencia, endpoints `POST`/`GET`, validación. ✅
 3. Mensajería — publisher de RabbitMQ y topología.
 4. Inventory Worker — consumidor, reserva atómica de stock, inbox de idempotencia.
 5. Consumidor de Orders — reacciona a los resultados de stock, aplica las transiciones de estado.
