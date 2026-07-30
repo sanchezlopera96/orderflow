@@ -14,6 +14,7 @@
     <PackageReference Include="FluentAssertions" />
     <PackageReference Include="FluentValidation" />
     <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" />
   </ItemGroup>
 
   <ItemGroup>

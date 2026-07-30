@@ -7,6 +7,7 @@ using OrderFlow.Orders.Api.Application.Validation;
 using OrderFlow.Orders.Api.Configuration;
 using OrderFlow.Orders.Api.Endpoints;
 using OrderFlow.Orders.Api.ErrorHandling;
+using OrderFlow.Orders.Api.Messaging;
 using OrderFlow.Orders.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -30,6 +31,10 @@ builder.Services.AddScoped<OrderService>();
 
 // Publisher real de RabbitMQ (reemplaza al no-op de la etapa anterior).
 builder.Services.AddRabbitMqMessaging(builder.Configuration);
+
+// Consumidor de resultados de stock: confirma o rechaza el pedido.
+builder.Services.AddScoped<StockResultHandler>();
+builder.Services.AddHostedService<StockResultConsumer>();
 
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
