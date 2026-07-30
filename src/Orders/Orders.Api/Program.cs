@@ -36,6 +36,10 @@ builder.Services.AddRabbitMqMessaging(builder.Configuration);
 builder.Services.AddScoped<StockResultHandler>();
 builder.Services.AddHostedService<StockResultConsumer>();
 
+builder.Services.AddHealthChecks()
+    .AddDbContextCheck<OrdersDbContext>("orders-db")
+    .AddCheck<RabbitMqHealthCheck>("rabbitmq");
+
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
 
@@ -48,7 +52,7 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
-app.MapGet("/health", () => Results.Ok(new { status = "healthy" }));
+app.MapHealthChecks("/health");
 app.MapOrderEndpoints();
 
 await app.ApplyMigrationsAsync();
