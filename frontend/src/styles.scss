@@ -1,0 +1,72 @@
+/* Tokens de diseño (paleta de marca, con nombres semánticos) */
+:root {
+  --color-primary: #f16a28;
+  --color-primary-strong: #ce571e;
+  --color-primary-soft: #fbe7da;
+  --color-header: #2a2521;
+
+  --color-bg: #faf7f4;
+  --color-surface: #ffffff;
+  --color-text: #221e1b;
+  --color-text-muted: #6e6660;
+  --color-border: #ece7e2;
+
+  --color-success: #2e7d32;
+  --color-success-soft: #e6f2e6;
+  --color-danger: #c62828;
+  --color-danger-soft: #fbe6e6;
+  --color-warning: #b26a00;
+  --color-warning-soft: #f7ecd9;
+
+  --radius: 10px;
+  --radius-sm: 8px;
+  --shadow: 0 1px 2px rgba(34, 30, 27, 0.06), 0 4px 16px rgba(34, 30, 27, 0.05);
+
+  --font-sans: "Segoe UI", system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: "Cascadia Code", "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3 {
+  margin: 0;
+  letter-spacing: -0.01em;
+  font-weight: 600;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+code, .mono {
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

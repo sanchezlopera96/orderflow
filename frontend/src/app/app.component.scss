@@ -1,0 +1,38 @@
+.app-header {
+  background: var(--color-header);
+  color: #f5f1ec;
+}
+
+.app-header__inner {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 18px 24px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.app-header__mark {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: var(--color-primary);
+  flex: none;
+}
+
+.app-header__title {
+  font-size: 1.15rem;
+  line-height: 1.1;
+}
+
+.app-header__subtitle {
+  margin: 2px 0 0;
+  font-size: 0.8rem;
+  color: #b8afa6;
+}
+
+.app-main {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 28px 24px 48px;
+}
