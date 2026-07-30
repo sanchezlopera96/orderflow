@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using OrderFlow.BuildingBlocks.Events;
 using OrderFlow.BuildingBlocks.Messaging;
 using OrderFlow.BuildingBlocks.Results;
+using OrderFlow.Orders.Api.Realtime;
 using OrderFlow.Orders.Domain;
 using OrderFlow.Orders.Infrastructure.Persistence;
 
@@ -12,6 +13,7 @@ namespace OrderFlow.Orders.Api.Application;
 public sealed class OrderService(
     OrdersDbContext dbContext,
     IEventPublisher eventPublisher,
+    IOrderNotifier orderNotifier,
     ILogger<OrderService> logger)
 {
     public async Task<Result<OrderResponse>> CreateAsync(CreateOrderRequest request, CancellationToken cancellationToken = default)
@@ -30,6 +32,8 @@ public sealed class OrderService(
         dbContext.Orders.Add(order);
         await dbContext.SaveChangesAsync(cancellationToken);
 
+        var response = OrderResponse.From(order);
+
         try
         {
             await eventPublisher.PublishAsync(
@@ -47,13 +51,15 @@ public sealed class OrderService(
                 order.Id);
         }
 
+        await orderNotifier.OrderChangedAsync(response, cancellationToken);
+
         logger.LogInformation(
             "Pedido {OrderId} creado para el SKU {Sku} (cantidad {Quantity})",
             order.Id,
             order.Sku,
             order.Quantity);
 
-        return Result.Success(OrderResponse.From(order));
+        return Result.Success(response);
     }
 
     public async Task<IReadOnlyList<OrderResponse>> GetAllAsync(CancellationToken cancellationToken = default)

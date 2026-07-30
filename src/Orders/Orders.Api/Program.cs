@@ -8,6 +8,7 @@ using OrderFlow.Orders.Api.Configuration;
 using OrderFlow.Orders.Api.Endpoints;
 using OrderFlow.Orders.Api.ErrorHandling;
 using OrderFlow.Orders.Api.Messaging;
+using OrderFlow.Orders.Api.Realtime;
 using OrderFlow.Orders.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -36,6 +37,13 @@ builder.Services.AddRabbitMqMessaging(builder.Configuration);
 builder.Services.AddScoped<StockResultHandler>();
 builder.Services.AddHostedService<StockResultConsumer>();
 
+// Tiempo real: empuja los cambios de pedido a los clientes por SignalR.
+builder.Services
+    .AddSignalR()
+    .AddJsonProtocol(options =>
+        options.PayloadSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase);
+builder.Services.AddSingleton<IOrderNotifier, SignalROrderNotifier>();
+
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<OrdersDbContext>("orders-db")
     .AddCheck<RabbitMqHealthCheck>("rabbitmq");
@@ -53,6 +61,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.MapHealthChecks("/health");
+app.MapHub<OrdersHub>("/hubs/orders");
 app.MapOrderEndpoints();
 
 await app.ApplyMigrationsAsync();

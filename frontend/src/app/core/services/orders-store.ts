@@ -1,21 +1,25 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { catchError, merge, of, Subject, switchMap, tap, timer } from 'rxjs';
-import { Observable } from 'rxjs';
+import { catchError, merge, Observable, of, Subject, switchMap, tap, timer } from 'rxjs';
+import * as signalR from '@microsoft/signalr';
+import { API_BASE_URL } from '../config/api.config';
 import { CreateOrderRequest, Order } from '../models/order.model';
 import { OrderService } from './order.service';
 
-/** Cada cuántos milisegundos se refresca la lista de pedidos. */
-const POLL_INTERVAL_MS = 3000;
+/**
+ * Cada cuántos milisegundos se refresca la lista como red de seguridad. El tiempo real llega por
+ * SignalR (push instantáneo); este polling lento solo cubre el caso de que el socket se caiga.
+ */
+const POLL_INTERVAL_MS = 10000;
 
 /**
- * Estado compartido de los pedidos, basado en signals. Hace polling periódico a la API y expone
- * la lista, el estado de carga y el de error. El formulario y la lista lo comparten sin necesidad
- * de una librería de estado.
+ * Estado compartido de los pedidos, basado en signals. Recibe los cambios en tiempo real por
+ * SignalR y los aplica sobre la lista; además hace una carga inicial y un polling de respaldo.
  */
 @Injectable({ providedIn: 'root' })
 export class OrdersStore {
   private readonly orderService = inject(OrderService);
+  private readonly hubUrl = `${inject(API_BASE_URL)}/hubs/orders`;
 
   private readonly _orders = signal<Order[]>([]);
   private readonly _loading = signal(true);
@@ -47,15 +51,37 @@ export class OrdersStore {
         }
         this._loading.set(false);
       });
+
+    this.connectRealtime();
   }
 
-  /** Fuerza un refresco inmediato, sin esperar al siguiente ciclo de polling. */
   refresh(): void {
     this.refresh$.next();
   }
 
-  /** Crea un pedido y, al terminar bien, refresca la lista de inmediato. */
   createOrder(request: CreateOrderRequest): Observable<Order> {
-    return this.orderService.createOrder(request).pipe(tap(() => this.refresh()));
+    return this.orderService.createOrder(request).pipe(tap((order) => this.upsert(order)));
+  }
+
+  private connectRealtime(): void {
+    const connection = new signalR.HubConnectionBuilder()
+      .withUrl(this.hubUrl)
+      .withAutomaticReconnect()
+      .build();
+
+    connection.on('OrderChanged', (order: Order) => this.upsert(order));
+    // Al reconectar tras una caída, se recarga todo por si se perdió algún evento.
+    connection.onreconnected(() => this.refresh());
+
+    connection.start().catch(() => {
+      // Si SignalR no puede conectar, el polling de respaldo mantiene la lista al día.
+    });
+  }
+
+  /** Inserta o reemplaza un pedido por id, manteniendo el orden por fecha de creación descendente. */
+  private upsert(order: Order): void {
+    const others = this._orders().filter((existing) => existing.id !== order.id);
+    this._orders.set([order, ...others].sort((a, b) => b.createdAt.localeCompare(a.createdAt)));
+    this._loading.set(false);
   }
 }

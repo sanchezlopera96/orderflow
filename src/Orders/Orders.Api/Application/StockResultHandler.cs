@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using OrderFlow.Orders.Api.Realtime;
 using OrderFlow.Orders.Domain;
 using OrderFlow.Orders.Infrastructure.Persistence;
 
@@ -9,7 +10,10 @@ namespace OrderFlow.Orders.Api.Application;
 /// sale de la máquina de estados del dominio: si el resultado llega dos veces, la segunda es un
 /// no-op porque el pedido ya no está en Pending; y una transición ilegal se registra sin romper.
 /// </summary>
-public sealed class StockResultHandler(OrdersDbContext dbContext, ILogger<StockResultHandler> logger)
+public sealed class StockResultHandler(
+    OrdersDbContext dbContext,
+    IOrderNotifier orderNotifier,
+    ILogger<StockResultHandler> logger)
 {
     public async Task ConfirmAsync(Guid orderId, CancellationToken cancellationToken)
     {
@@ -31,6 +35,7 @@ public sealed class StockResultHandler(OrdersDbContext dbContext, ILogger<StockR
         }
 
         await dbContext.SaveChangesAsync(cancellationToken);
+        await orderNotifier.OrderChangedAsync(OrderResponse.From(order), cancellationToken);
         logger.LogInformation("Pedido {OrderId} confirmado", orderId);
     }
 
@@ -54,6 +59,7 @@ public sealed class StockResultHandler(OrdersDbContext dbContext, ILogger<StockR
         }
 
         await dbContext.SaveChangesAsync(cancellationToken);
+        await orderNotifier.OrderChangedAsync(OrderResponse.From(order), cancellationToken);
         logger.LogInformation("Pedido {OrderId} rechazado: {Reason}", orderId, reason);
     }
 }
