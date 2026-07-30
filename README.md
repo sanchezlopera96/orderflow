@@ -128,15 +128,21 @@ dotnet build
 dotnet test
 ```
 
-### Generar la migración inicial de Orders
+### Generar las migraciones iniciales
 
-La primera vez, crea la migración de EF Core (incluye el seed del catálogo):
+La primera vez, crea las migraciones de EF Core (incluyen los seeds de catálogo y de stock):
 
 ```bash
 dotnet tool install --global dotnet-ef   # solo si no la tienes
+
 dotnet ef migrations add InitialCreate \
   --project src/Orders/Orders.Infrastructure \
   --startup-project src/Orders/Orders.Api \
+  --output-dir Persistence/Migrations
+
+dotnet ef migrations add InitialCreate \
+  --project src/Inventory/Inventory.Infrastructure \
+  --startup-project src/Inventory/Inventory.Worker \
   --output-dir Persistence/Migrations
 ```
 
@@ -170,8 +176,25 @@ En `Development` el documento OpenAPI queda en `/openapi/v1.json`. El archivo
 `src/Orders/Orders.Api/Orders.Api.http` trae peticiones de ejemplo (válidas y de error) para
 ejecutar desde el IDE.
 
-> Nota: en esta etapa el `POST` publica el evento contra un publisher no-op; RabbitMQ real entra en
-> la etapa de mensajería.
+### Levantar el Inventory Worker
+
+En otra terminal (cada servicio usa su propia base `Database__ConnectionString`; en dev el worker
+apunta a la base `inventory`):
+
+```bash
+docker run --name orderflow-inventory-db -e POSTGRES_PASSWORD=postgres \
+  -e POSTGRES_DB=inventory -p 5433:5432 -d postgres:16-alpine   # base separada para Inventory
+
+$env:Database__ConnectionString="Host=localhost;Port=5433;Database=inventory;Username=postgres;Password=postgres"
+dotnet run --project src/Inventory/Inventory.Worker
+```
+
+El worker consume `OrderCreated`, reserva stock de forma **idempotente** (inbox por `EventId` +
+concurrencia optimista (columna de versión)) y publica `StockReserved` o `StockRejected`. El stock sembrado es
+`ABC-01=100`, `DEF-02=50`, `GHI-03=3` (este último bajo, para probar el rechazo fácilmente).
+
+> En esta etapa, quien reacciona a `StockReserved`/`StockRejected` para pasar el pedido a
+> `Confirmed`/`Rejected` (el consumidor en la Orders API) llega en la etapa siguiente.
 
 ## Configuración
 
@@ -234,7 +257,7 @@ La construcción se divide en etapas que se pueden probar de forma independiente
 1. **Esqueleto de la solución y building blocks** — proyectos, contratos compartidos, Result pattern. ✅
 2. **Núcleo de Orders** — dominio, persistencia, endpoints `POST`/`GET`, validación. ✅
 3. **Mensajería** — publisher de RabbitMQ y topología. ✅
-4. Inventory Worker — consumidor, reserva atómica de stock, inbox de idempotencia.
+4. **Inventory Worker** — consumidor, reserva atómica de stock, inbox de idempotencia. ✅
 5. Consumidor de Orders — reacciona a los resultados de stock, aplica las transiciones de estado.
 6. Front end — panel en Angular (formulario + lista con polling).
 7. Docker — imágenes multi-stage y `docker compose up`.

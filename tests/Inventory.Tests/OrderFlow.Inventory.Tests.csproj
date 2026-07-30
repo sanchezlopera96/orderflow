@@ -13,9 +13,11 @@
     <PackageReference Include="xunit.runner.visualstudio" />
     <PackageReference Include="FluentAssertions" />
     <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\Inventory\Inventory.Domain\OrderFlow.Inventory.Domain.csproj" />
     <ProjectReference Include="..\..\src\Inventory\Inventory.Infrastructure\OrderFlow.Inventory.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\BuildingBlocks\OrderFlow.BuildingBlocks.csproj" />
   </ItemGroup>
