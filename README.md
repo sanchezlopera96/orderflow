@@ -197,6 +197,22 @@ concurrencia optimista (columna de versión)) y publica `StockReserved` o `Stock
 > Inventory reserva → la Orders API consume el resultado y lo pasa a `Confirmed` o `Rejected`, y el
 > `GET /orders` refleja el estado final.
 
+### Levantar el panel (frontend)
+
+Panel en Angular 20 (standalone components, signals, reactive forms). Requiere Node 20+ y la Orders
+API corriendo (el dev-server hace proxy de `/orders` a `http://localhost:5080`).
+
+```bash
+cd frontend
+npm install
+npm start          # http://localhost:4200
+```
+
+El panel tiene dos vistas: un formulario para crear pedidos con validaciones y errores visibles
+(incluye el error de negocio cuando el SKU no existe), y una lista que muestra el estado de cada
+pedido y se **refresca por polling cada 3 s** (se ve pasar de `Pending` a `Confirmed`/`Rejected`).
+Pruebas del frontend (opcionales): `npm test` (requiere Chrome).
+
 ## Configuración
 
 Todas las connection strings y la configuración del broker se inyectan por **variables de
@@ -260,7 +276,7 @@ La construcción se divide en etapas que se pueden probar de forma independiente
 3. **Mensajería** — publisher de RabbitMQ y topología. ✅
 4. **Inventory Worker** — consumidor, reserva atómica de stock, inbox de idempotencia. ✅
 5. **Consumidor de Orders** — reacciona a los resultados de stock, aplica las transiciones de estado. ✅
-6. Front end — panel en Angular (formulario + lista con polling).
+6. **Front end** — panel en Angular (formulario + lista con polling). ✅
 7. Docker — imágenes multi-stage y `docker compose up`.
 8. Cierre del README, más manifiestos de Kubernetes y SignalR opcionales.
 

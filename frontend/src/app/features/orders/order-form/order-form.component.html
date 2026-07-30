@@ -1,0 +1,61 @@
+<form class="card form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+  <h2 class="form__title">Nuevo pedido</h2>
+
+  <div class="field">
+    <label for="customerName">Cliente</label>
+    <input
+      id="customerName"
+      type="text"
+      formControlName="customerName"
+      autocomplete="off"
+      [class.field__input--invalid]="showError('customerName', 'required')"
+    />
+    @if (showError('customerName', 'required')) {
+      <p class="field__error">El nombre del cliente es obligatorio.</p>
+    }
+  </div>
+
+  <div class="field">
+    <label for="sku">SKU</label>
+    <input
+      id="sku"
+      type="text"
+      class="mono"
+      formControlName="sku"
+      autocomplete="off"
+      placeholder="ABC-01"
+      [class.field__input--invalid]="showError('sku', 'required')"
+    />
+    <p class="field__hint">Disponibles: ABC-01, DEF-02, GHI-03</p>
+    @if (showError('sku', 'required')) {
+      <p class="field__error">El SKU es obligatorio.</p>
+    }
+  </div>
+
+  <div class="field">
+    <label for="quantity">Cantidad</label>
+    <input
+      id="quantity"
+      type="number"
+      formControlName="quantity"
+      min="1"
+      max="100"
+      [class.field__input--invalid]="showError('quantity', 'min') || showError('quantity', 'max') || showError('quantity', 'required')"
+    />
+    @if (showError('quantity', 'required') || showError('quantity', 'min') || showError('quantity', 'max')) {
+      <p class="field__error">La cantidad debe estar entre 1 y 100.</p>
+    }
+  </div>
+
+  @if (serverError()) {
+    <p class="form__server-error" role="alert">{{ serverError() }}</p>
+  }
+
+  @if (justCreated()) {
+    <p class="form__success" role="status">Pedido creado.</p>
+  }
+
+  <button type="submit" class="button" [disabled]="submitting()">
+    {{ submitting() ? 'Creando…' : 'Crear pedido' }}
+  </button>
+</form>
