@@ -1,0 +1,95 @@
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "15672:15672"   # consola de administración (opcional): http://localhost:15672
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "check_running"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  orders-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: orders
+    volumes:
+      - orders-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d orders"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  inventory-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: inventory
+    volumes:
+      - inventory-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d inventory"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  orders-api:
+    build:
+      context: .
+      dockerfile: src/Orders/Orders.Api/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      Database__ConnectionString: "Host=orders-db;Port=5432;Database=orders;Username=postgres;Password=postgres"
+      RabbitMq__HostName: rabbitmq
+      RabbitMq__UserName: guest
+      RabbitMq__Password: guest
+    ports:
+      - "5080:8080"     # API accesible directo (p. ej. para el archivo .http)
+    depends_on:
+      orders-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
+
+  inventory-worker:
+    build:
+      context: .
+      dockerfile: src/Inventory/Inventory.Worker/Dockerfile
+    environment:
+      DOTNET_ENVIRONMENT: Production
+      Database__ConnectionString: "Host=inventory-db;Port=5432;Database=inventory;Username=postgres;Password=postgres"
+      RabbitMq__HostName: rabbitmq
+      RabbitMq__UserName: guest
+      RabbitMq__Password: guest
+    depends_on:
+      inventory-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "4200:80"       # el panel: http://localhost:4200
+    depends_on:
+      orders-api:
+        condition: service_healthy
+
+volumes:
+  orders-db-data:
+  inventory-db-data:

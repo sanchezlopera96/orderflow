@@ -115,11 +115,28 @@ referencian nada.
 
 ## Cómo ejecutar
 
-> El arranque completo en contenedores (`docker compose up`) se entrega en una etapa posterior.
-> Por ahora la solución compila, las pruebas corren sin base de datos y la Orders API se puede
-> levantar contra un PostgreSQL local.
+### Con Docker (recomendado)
 
-Requisitos: .NET 10 SDK (y la herramienta `dotnet-ef` para las migraciones).
+Un solo comando levanta **todo** el sistema —RabbitMQ, las dos bases PostgreSQL, la Orders API, el
+Inventory Worker y el panel—, aplica las migraciones y siembra los datos:
+
+```bash
+docker compose up --build
+```
+
+Los healthchecks y `depends_on` aseguran el orden de arranque (las bases y el broker quedan
+saludables antes de que arranquen los servicios). Cuando esté arriba:
+
+- Panel: http://localhost:4200
+- API directa (p. ej. para `Orders.Api.http`): http://localhost:5080
+- Consola de RabbitMQ (opcional): http://localhost:15672 (guest/guest)
+
+Para detener y borrar todo, incluidos los datos: `docker compose down -v`.
+
+### En local, sin Docker
+
+> Alternativa para desarrollo. Requisitos: .NET 10 SDK (y `dotnet-ef` para las migraciones),
+> Node 20+, y un PostgreSQL y un RabbitMQ accesibles.
 
 ### Compilar y probar
 
@@ -277,7 +294,7 @@ La construcción se divide en etapas que se pueden probar de forma independiente
 4. **Inventory Worker** — consumidor, reserva atómica de stock, inbox de idempotencia. ✅
 5. **Consumidor de Orders** — reacciona a los resultados de stock, aplica las transiciones de estado. ✅
 6. **Front end** — panel en Angular (formulario + lista con polling). ✅
-7. Docker — imágenes multi-stage y `docker compose up`.
+7. **Docker** — imágenes multi-stage y `docker compose up`. ✅
 8. Cierre del README, más manifiestos de Kubernetes y SignalR opcionales.
 
 ## Qué haría distinto con más tiempo

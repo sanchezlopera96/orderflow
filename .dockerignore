@@ -1,0 +1,10 @@
+**/bin/
+**/obj/
+**/node_modules/
+**/dist/
+**/.angular/
+**/out-tsc/
+.git/
+.vs/
+.idea/
+frontend/
