@@ -6,7 +6,15 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Orders.Infrastructure\OrderFlow.Orders.Infrastructure.csproj" />
+    <ProjectReference Include="..\Orders.Domain\OrderFlow.Orders.Domain.csproj" />
+    <ProjectReference Include="..\..\BuildingBlocks\OrderFlow.BuildingBlocks.csproj" />
   </ItemGroup>
 
 </Project>
