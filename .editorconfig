@@ -21,7 +21,7 @@ indent_size = 2
 [*.{ts,html,scss,css}]
 indent_size = 2
 
-# EF Core migrations are tool-generated: do not enforce code style on them.
+# Las migraciones de EF Core son código generado por herramienta: no le aplicamos reglas de estilo.
 [**/Migrations/*.cs]
 generated_code = true
 dotnet_diagnostic.IDE0161.severity = none

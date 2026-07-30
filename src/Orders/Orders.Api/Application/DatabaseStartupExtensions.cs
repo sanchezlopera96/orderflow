@@ -5,7 +5,7 @@ namespace OrderFlow.Orders.Api.Application;
 
 public static class DatabaseStartupExtensions
 {
-    /// <summary>Applies pending EF Core migrations on startup. Catalog seed ships with the migration.</summary>
+    /// <summary>Aplica las migraciones pendientes de EF Core al arrancar. El seed del catálogo viaja en la migración.</summary>
     public static async Task ApplyMigrationsAsync(this WebApplication app)
     {
         await using var scope = app.Services.CreateAsyncScope();

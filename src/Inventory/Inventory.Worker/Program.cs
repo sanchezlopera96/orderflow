@@ -2,7 +2,7 @@ using Microsoft.Extensions.Hosting;
 
 var builder = Host.CreateApplicationBuilder(args);
 
-// The RabbitMQ consumer (a BackgroundService) is registered here in a later stage.
+// El consumidor de RabbitMQ (un BackgroundService) se registra aquí en una etapa posterior.
 var host = builder.Build();
 
 host.Run();

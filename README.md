@@ -148,10 +148,16 @@ Necesita un PostgreSQL. Uno rápido para desarrollo:
 docker run --name orderflow-postgres -e POSTGRES_PASSWORD=postgres \
   -e POSTGRES_DB=orders -p 5432:5432 -d postgres:16-alpine
 
+docker run --name orderflow-rabbitmq -p 5672:5672 -p 15672:15672 \
+  -d rabbitmq:3-management   # consola de administración en http://localhost:15672 (guest/guest)
+
 dotnet run --project src/Orders/Orders.Api
 ```
 
-La API aplica las migraciones al arrancar (crea las tablas y siembra el catálogo). Endpoints:
+La API aplica las migraciones al arrancar (crea las tablas y siembra el catálogo) y publica
+`OrderCreated` al crear un pedido. Si el broker no está disponible en ese momento, el pedido se
+crea igual y queda en `Pending` (el fallo se registra); un outbox transaccional sería la evolución
+robusta. Endpoints:
 
 | Método | Ruta | Descripción |
 | --- | --- | --- |
@@ -170,8 +176,22 @@ ejecutar desde el IDE.
 ## Configuración
 
 Todas las connection strings y la configuración del broker se inyectan por **variables de
-entorno** (enlazadas con `IOptions`); nada está hardcodeado en el código. Las variables concretas
-se documentan en la etapa de Docker.
+entorno** (enlazadas con `IOptions`); nada está hardcodeado en el código. Se usa el separador `__`
+de .NET para las secciones anidadas.
+
+| Variable | Servicio | Descripción | Valor por defecto (dev) |
+| --- | --- | --- | --- |
+| `Database__ConnectionString` | Orders API | Connection string de PostgreSQL | `Host=localhost;...;Database=orders` |
+| `RabbitMq__HostName` | Orders API | Host del broker | `localhost` |
+| `RabbitMq__Port` | Orders API | Puerto AMQP | `5672` |
+| `RabbitMq__UserName` | Orders API | Usuario | `guest` |
+| `RabbitMq__Password` | Orders API | Contraseña | `guest` |
+| `RabbitMq__ExchangeName` | Orders API | Topic exchange | `orderflow` |
+
+La topología es un topic exchange durable `orderflow` con routing keys `order.created`,
+`stock.reserved` y `stock.rejected`. Los mensajes se publican como persistentes y la conexión
+tiene recuperación automática. Las colas y sus bindings las declara cada consumidor (Inventory y
+Orders) en las etapas siguientes.
 
 ## Pruebas
 
@@ -213,7 +233,7 @@ La construcción se divide en etapas que se pueden probar de forma independiente
 
 1. **Esqueleto de la solución y building blocks** — proyectos, contratos compartidos, Result pattern. ✅
 2. **Núcleo de Orders** — dominio, persistencia, endpoints `POST`/`GET`, validación. ✅
-3. Mensajería — publisher de RabbitMQ y topología.
+3. **Mensajería** — publisher de RabbitMQ y topología. ✅
 4. Inventory Worker — consumidor, reserva atómica de stock, inbox de idempotencia.
 5. Consumidor de Orders — reacciona a los resultados de stock, aplica las transiciones de estado.
 6. Front end — panel en Angular (formulario + lista con polling).

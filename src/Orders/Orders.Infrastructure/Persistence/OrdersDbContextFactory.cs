@@ -4,8 +4,9 @@ using Microsoft.EntityFrameworkCore.Design;
 namespace OrderFlow.Orders.Infrastructure.Persistence;
 
 /// <summary>
-/// Used only by the EF Core tools at design time (for example, `dotnet ef migrations add`).
-/// It is never used at runtime; the application configures the context through dependency injection.
+/// La usan únicamente las herramientas de EF Core en tiempo de diseño (por ejemplo,
+/// `dotnet ef migrations add`). Nunca se usa en tiempo de ejecución; la aplicación configura el
+/// contexto mediante inyección de dependencias.
 /// </summary>
 public sealed class OrdersDbContextFactory : IDesignTimeDbContextFactory<OrdersDbContext>
 {

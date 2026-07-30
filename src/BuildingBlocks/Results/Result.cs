@@ -1,9 +1,9 @@
 namespace OrderFlow.BuildingBlocks.Results;
 
 /// <summary>
-/// Result pattern. Expected business outcomes (validation failures, "out of stock") are
-/// returned as failed results instead of thrown exceptions; exceptions are reserved for the
-/// truly unexpected.
+/// Result pattern. Los resultados de negocio esperados (fallos de validación, "sin stock") se
+/// devuelven como resultados fallidos en lugar de lanzar excepciones; las excepciones quedan
+/// reservadas para lo verdaderamente inesperado.
 /// </summary>
 public class Result
 {
@@ -11,12 +11,12 @@ public class Result
     {
         if (isSuccess && error != Error.None)
         {
-            throw new InvalidOperationException("A successful result cannot contain an error.");
+            throw new InvalidOperationException("Un resultado exitoso no puede contener un error.");
         }
 
         if (!isSuccess && error == Error.None)
         {
-            throw new InvalidOperationException("A failed result must contain an error.");
+            throw new InvalidOperationException("Un resultado fallido debe contener un error.");
         }
 
         IsSuccess = isSuccess;
@@ -38,7 +38,7 @@ public class Result
     public static Result<TValue> Failure<TValue>(Error error) => new(default, false, error);
 }
 
-/// <summary>A result that also carries a value on success.</summary>
+/// <summary>Un resultado que además transporta un valor cuando es exitoso.</summary>
 public class Result<TValue> : Result
 {
     private readonly TValue? _value;
@@ -51,5 +51,5 @@ public class Result<TValue> : Result
 
     public TValue Value => IsSuccess
         ? _value!
-        : throw new InvalidOperationException("Cannot access the value of a failed result.");
+        : throw new InvalidOperationException("No se puede acceder al valor de un resultado fallido.");
 }

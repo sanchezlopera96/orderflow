@@ -1,8 +1,8 @@
 namespace OrderFlow.Orders.Domain;
 
 /// <summary>
-/// Lifecycle of an order. The only valid transitions are Pending -> Confirmed and
-/// Pending -> Rejected; the domain model enforces this in later stages.
+/// Ciclo de vida de un pedido. Las únicas transiciones válidas son Pending -> Confirmed y
+/// Pending -> Rejected; el modelo de dominio lo garantiza en el agregado.
 /// </summary>
 public enum OrderStatus
 {

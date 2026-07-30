@@ -1,4 +1,4 @@
-﻿<Project>
+<Project>
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -13,7 +13,7 @@
   <PropertyGroup Label="Dependency auditing">
     <!--
       Audit only our DIRECT dependencies. Vulnerability advisories on transitive packages
-      (which we do not reference directly and cannot upgrade without upstream) should not fail
+      (which we don't reference directly and can't upgrade without upstream) should not fail
       a reproducible build, and audit results change as new advisories are published.
       Direct dependencies are still audited strictly.
     -->

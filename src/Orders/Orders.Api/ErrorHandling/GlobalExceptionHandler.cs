@@ -3,7 +3,7 @@ using OrderFlow.Orders.Domain;
 
 namespace OrderFlow.Orders.Api.ErrorHandling;
 
-/// <summary>Converts unhandled exceptions into consistent ProblemDetails responses.</summary>
+/// <summary>Convierte las excepciones no controladas en respuestas ProblemDetails consistentes.</summary>
 public sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger) : IExceptionHandler
 {
     public async ValueTask<bool> TryHandleAsync(
@@ -11,18 +11,18 @@ public sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logge
         Exception exception,
         CancellationToken cancellationToken)
     {
-        logger.LogError(exception, "Unhandled exception while processing {Path}", httpContext.Request.Path);
+        logger.LogError(exception, "Excepción no controlada al procesar {Path}", httpContext.Request.Path);
 
         var (statusCode, title, detail) = exception switch
         {
             InvalidOrderStateException ex => (
                 StatusCodes.Status409Conflict,
-                "Invalid order state transition",
+                "Transición de estado inválida",
                 ex.Message),
             _ => (
                 StatusCodes.Status500InternalServerError,
-                "An unexpected error occurred",
-                "An unexpected error occurred while processing the request."),
+                "Ocurrió un error inesperado",
+                "Ocurrió un error inesperado al procesar la petición."),
         };
 
         await Results.Problem(detail: detail, statusCode: statusCode, title: title)
