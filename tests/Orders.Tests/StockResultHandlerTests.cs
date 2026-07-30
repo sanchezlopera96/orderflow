@@ -2,6 +2,7 @@ using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using OrderFlow.Orders.Api.Application;
+using OrderFlow.Orders.Api.Realtime;
 using OrderFlow.Orders.Domain;
 using OrderFlow.Orders.Infrastructure.Persistence;
 using Xunit;
@@ -10,10 +11,19 @@ namespace OrderFlow.Orders.Tests;
 
 public class StockResultHandlerTests
 {
+    private sealed class NoOpOrderNotifier : IOrderNotifier
+    {
+        public Task OrderChangedAsync(OrderResponse order, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+    }
+
     private static OrdersDbContext NewDbContext() =>
         new(new DbContextOptionsBuilder<OrdersDbContext>()
             .UseInMemoryDatabase($"orders-{Guid.NewGuid()}")
             .Options);
+
+    private static StockResultHandler NewHandler(OrdersDbContext dbContext) =>
+        new(dbContext, new NoOpOrderNotifier(), NullLogger<StockResultHandler>.Instance);
 
     private static async Task<Guid> SeedPendingOrderAsync(OrdersDbContext dbContext)
     {
@@ -28,7 +38,7 @@ public class StockResultHandlerTests
     {
         await using var db = NewDbContext();
         var orderId = await SeedPendingOrderAsync(db);
-        var handler = new StockResultHandler(db, NullLogger<StockResultHandler>.Instance);
+        var handler = NewHandler(db);
 
         await handler.ConfirmAsync(orderId, CancellationToken.None);
 
@@ -40,7 +50,7 @@ public class StockResultHandlerTests
     {
         await using var db = NewDbContext();
         var orderId = await SeedPendingOrderAsync(db);
-        var handler = new StockResultHandler(db, NullLogger<StockResultHandler>.Instance);
+        var handler = NewHandler(db);
 
         await handler.RejectAsync(orderId, "Stock insuficiente", CancellationToken.None);
 
@@ -52,7 +62,7 @@ public class StockResultHandlerTests
     {
         await using var db = NewDbContext();
         var orderId = await SeedPendingOrderAsync(db);
-        var handler = new StockResultHandler(db, NullLogger<StockResultHandler>.Instance);
+        var handler = NewHandler(db);
 
         await handler.ConfirmAsync(orderId, CancellationToken.None);
         await handler.ConfirmAsync(orderId, CancellationToken.None);
@@ -65,7 +75,7 @@ public class StockResultHandlerTests
     {
         await using var db = NewDbContext();
         var orderId = await SeedPendingOrderAsync(db);
-        var handler = new StockResultHandler(db, NullLogger<StockResultHandler>.Instance);
+        var handler = NewHandler(db);
 
         await handler.RejectAsync(orderId, "Stock insuficiente", CancellationToken.None);
         await handler.ConfirmAsync(orderId, CancellationToken.None); // transición ilegal: se ignora
@@ -77,7 +87,7 @@ public class StockResultHandlerTests
     public async Task A_result_for_an_unknown_order_is_ignored()
     {
         await using var db = NewDbContext();
-        var handler = new StockResultHandler(db, NullLogger<StockResultHandler>.Instance);
+        var handler = NewHandler(db);
 
         var act = async () => await handler.ConfirmAsync(Guid.NewGuid(), CancellationToken.None);
 

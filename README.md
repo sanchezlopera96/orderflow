@@ -227,8 +227,9 @@ npm start          # http://localhost:4200
 
 El panel tiene dos vistas: un formulario para crear pedidos con validaciones y errores visibles
 (incluye el error de negocio cuando el SKU no existe), y una lista que muestra el estado de cada
-pedido y se **refresca por polling cada 3 s** (se ve pasar de `Pending` a `Confirmed`/`Rejected`).
-Pruebas del frontend (opcionales): `npm test` (requiere Chrome).
+pedido y se **actualiza en tiempo real por SignalR** (con un polling de respaldo cada 10 s por
+resiliencia): se ve pasar de `Pending` a `Confirmed`/`Rejected` al instante. Pruebas del frontend
+(opcionales): `npm test` (requiere Chrome).
 
 ## Configuración
 
