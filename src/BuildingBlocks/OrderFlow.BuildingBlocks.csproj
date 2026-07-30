@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>OrderFlow.BuildingBlocks</RootNamespace>
+    <AssemblyName>OrderFlow.BuildingBlocks</AssemblyName>
+  </PropertyGroup>
+
+</Project>
