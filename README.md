@@ -193,8 +193,9 @@ El worker consume `OrderCreated`, reserva stock de forma **idempotente** (inbox 
 concurrencia optimista (columna de versión)) y publica `StockReserved` o `StockRejected`. El stock sembrado es
 `ABC-01=100`, `DEF-02=50`, `GHI-03=3` (este último bajo, para probar el rechazo fácilmente).
 
-> En esta etapa, quien reacciona a `StockReserved`/`StockRejected` para pasar el pedido a
-> `Confirmed`/`Rejected` (el consumidor en la Orders API) llega en la etapa siguiente.
+> Con ambos servicios arriba el ciclo se cierra de punta a punta: creas un pedido (`Pending`) →
+> Inventory reserva → la Orders API consume el resultado y lo pasa a `Confirmed` o `Rejected`, y el
+> `GET /orders` refleja el estado final.
 
 ## Configuración
 
@@ -258,7 +259,7 @@ La construcción se divide en etapas que se pueden probar de forma independiente
 2. **Núcleo de Orders** — dominio, persistencia, endpoints `POST`/`GET`, validación. ✅
 3. **Mensajería** — publisher de RabbitMQ y topología. ✅
 4. **Inventory Worker** — consumidor, reserva atómica de stock, inbox de idempotencia. ✅
-5. Consumidor de Orders — reacciona a los resultados de stock, aplica las transiciones de estado.
+5. **Consumidor de Orders** — reacciona a los resultados de stock, aplica las transiciones de estado. ✅
 6. Front end — panel en Angular (formulario + lista con polling).
 7. Docker — imágenes multi-stage y `docker compose up`.
 8. Cierre del README, más manifiestos de Kubernetes y SignalR opcionales.
