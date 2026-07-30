@@ -1,12 +1,12 @@
 namespace OrderFlow.Orders.Domain;
 
 /// <summary>
-/// A catalog entry. Orders keeps its own catalog (read model) so it can validate that a SKU exists
-/// without calling the Inventory service synchronously.
+/// Entrada del catálogo. Orders mantiene su propio catálogo (read model) para poder validar que un
+/// SKU existe sin llamar de forma síncrona al servicio de Inventory.
 /// </summary>
 public sealed class Product
 {
-    // Required by EF Core for materialization.
+    // Requerido por EF Core para la materialización.
     private Product()
     {
     }

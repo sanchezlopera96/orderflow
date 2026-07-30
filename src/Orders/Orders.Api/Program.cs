@@ -1,13 +1,12 @@
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
-using OrderFlow.BuildingBlocks.Messaging;
+using OrderFlow.BuildingBlocks.Messaging.RabbitMq;
 using OrderFlow.Orders.Api.Application;
 using OrderFlow.Orders.Api.Application.Validation;
 using OrderFlow.Orders.Api.Configuration;
 using OrderFlow.Orders.Api.Endpoints;
 using OrderFlow.Orders.Api.ErrorHandling;
-using OrderFlow.Orders.Infrastructure.Messaging;
 using OrderFlow.Orders.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -29,8 +28,8 @@ builder.Services.AddDbContext<OrdersDbContext>((serviceProvider, options) =>
 builder.Services.AddValidatorsFromAssemblyContaining<CreateOrderRequestValidator>();
 builder.Services.AddScoped<OrderService>();
 
-// Placeholder publisher until RabbitMQ is wired in the messaging stage.
-builder.Services.AddSingleton<IEventPublisher, NoOpEventPublisher>();
+// Publisher real de RabbitMQ (reemplaza al no-op de la etapa anterior).
+builder.Services.AddRabbitMqMessaging(builder.Configuration);
 
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
@@ -51,5 +50,5 @@ await app.ApplyMigrationsAsync();
 
 app.Run();
 
-// Exposed so future integration tests can bootstrap the host via WebApplicationFactory.
+// Se expone para que futuras pruebas de integración puedan levantar el host con WebApplicationFactory.
 public partial class Program;

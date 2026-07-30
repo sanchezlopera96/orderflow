@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace OrderFlow.Orders.Api.Configuration;
 
-/// <summary>Strongly-typed database settings, bound from configuration / environment variables.</summary>
+/// <summary>Configuración de base de datos tipada, enlazada desde configuración / variables de entorno.</summary>
 public sealed class DatabaseOptions
 {
     public const string SectionName = "Database";

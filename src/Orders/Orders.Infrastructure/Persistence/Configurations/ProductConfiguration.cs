@@ -15,7 +15,7 @@ public sealed class ProductConfiguration : IEntityTypeConfiguration<Product>
         builder.Property(p => p.Sku).HasMaxLength(64);
         builder.Property(p => p.Name).HasMaxLength(200).IsRequired();
 
-        // Catalog seed. Inventory seeds stock for these same SKUs.
+        // Seed del catálogo. Inventory siembra stock para estos mismos SKUs.
         builder.HasData(
             new { Sku = "ABC-01", Name = "Wireless Mouse" },
             new { Sku = "DEF-02", Name = "Mechanical Keyboard" },

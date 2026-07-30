@@ -1,14 +1,15 @@
 namespace OrderFlow.Orders.Domain;
 
 /// <summary>
-/// The order aggregate root. It owns its lifecycle: it is created as <see cref="OrderStatus.Pending"/>
-/// and can only move to <see cref="OrderStatus.Confirmed"/> or <see cref="OrderStatus.Rejected"/> from
-/// there. Transitioning to the state it is already in is an idempotent no-op, which lets the messaging
-/// consumer apply a duplicated stock result safely.
+/// Raíz del agregado de pedidos. Es dueño de su ciclo de vida: nace como
+/// <see cref="OrderStatus.Pending"/> y desde ahí solo puede pasar a <see cref="OrderStatus.Confirmed"/>
+/// o <see cref="OrderStatus.Rejected"/>. Transicionar al estado en el que ya está es un no-op
+/// idempotente, lo que permite que el consumidor de mensajería aplique con seguridad un resultado
+/// de stock duplicado.
 /// </summary>
 public sealed class Order
 {
-    // Required by EF Core for materialization.
+    // Requerido por EF Core para la materialización.
     private Order()
     {
     }
@@ -35,11 +36,11 @@ public sealed class Order
 
     public DateTimeOffset CreatedAt { get; private set; }
 
-    /// <summary>Creates a new order in the <see cref="OrderStatus.Pending"/> state.</summary>
+    /// <summary>Crea un nuevo pedido en estado <see cref="OrderStatus.Pending"/>.</summary>
     public static Order Create(string customerName, string sku, int quantity) =>
         new(Guid.NewGuid(), customerName, sku, quantity, OrderStatus.Pending, DateTimeOffset.UtcNow);
 
-    /// <summary>Confirms the order. Idempotent if already confirmed; invalid if already rejected.</summary>
+    /// <summary>Confirma el pedido. Idempotente si ya está confirmado; inválido si ya fue rechazado.</summary>
     public void Confirm()
     {
         if (Status == OrderStatus.Confirmed)
@@ -55,7 +56,7 @@ public sealed class Order
         Status = OrderStatus.Confirmed;
     }
 
-    /// <summary>Rejects the order. Idempotent if already rejected; invalid if already confirmed.</summary>
+    /// <summary>Rechaza el pedido. Idempotente si ya está rechazado; inválido si ya fue confirmado.</summary>
     public void Reject()
     {
         if (Status == OrderStatus.Rejected)

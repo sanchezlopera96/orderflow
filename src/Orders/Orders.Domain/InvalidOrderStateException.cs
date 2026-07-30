@@ -1,12 +1,12 @@
 namespace OrderFlow.Orders.Domain;
 
 /// <summary>
-/// Thrown when a caller attempts an order state transition that the aggregate forbids
-/// (for example, confirming an order that was already rejected). Same-state transitions are
-/// treated as idempotent no-ops and do not raise this exception.
+/// Se lanza cuando se intenta una transición de estado que el agregado prohíbe (por ejemplo,
+/// confirmar un pedido que ya fue rechazado). Las transiciones al mismo estado se tratan como
+/// no-ops idempotentes y no lanzan esta excepción.
 /// </summary>
 public sealed class InvalidOrderStateException(OrderStatus from, OrderStatus to)
-    : Exception($"Cannot transition an order from {from} to {to}.")
+    : Exception($"No se puede pasar un pedido de {from} a {to}.")
 {
     public OrderStatus From { get; } = from;
 

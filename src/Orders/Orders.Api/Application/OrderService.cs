@@ -8,7 +8,7 @@ using OrderFlow.Orders.Infrastructure.Persistence;
 
 namespace OrderFlow.Orders.Api.Application;
 
-/// <summary>Use-case orchestration for orders. Endpoints stay thin and delegate here.</summary>
+/// <summary>Orquestación de los casos de uso de pedidos. Los endpoints quedan delgados y delegan aquí.</summary>
 public sealed class OrderService(
     OrdersDbContext dbContext,
     IEventPublisher eventPublisher,
@@ -30,12 +30,28 @@ public sealed class OrderService(
         dbContext.Orders.Add(order);
         await dbContext.SaveChangesAsync(cancellationToken);
 
-        await eventPublisher.PublishAsync(
-            new OrderCreated { OrderId = order.Id, Sku = order.Sku, Quantity = order.Quantity },
-            cancellationToken);
+        try
+        {
+            await eventPublisher.PublishAsync(
+                new OrderCreated { OrderId = order.Id, Sku = order.Sku, Quantity = order.Quantity },
+                cancellationToken);
+        }
+        catch (Exception exception)
+        {
+            // El pedido ya quedó persistido como Pending. Si el broker no está disponible, lo dejamos
+            // en Pending y registramos el fallo en lugar de romper la petición; un outbox transaccional
+            // sería la evolución robusta (ver ADR 0005).
+            logger.LogError(
+                exception,
+                "No se pudo publicar OrderCreated para el pedido {OrderId}; queda en Pending",
+                order.Id);
+        }
 
-        logger.LogInformation("Order {OrderId} created for SKU {Sku} (quantity {Quantity})",
-            order.Id, order.Sku, order.Quantity);
+        logger.LogInformation(
+            "Pedido {OrderId} creado para el SKU {Sku} (cantidad {Quantity})",
+            order.Id,
+            order.Sku,
+            order.Quantity);
 
         return Result.Success(OrderResponse.From(order));
     }

@@ -4,7 +4,7 @@ namespace OrderFlow.Orders.Api.ErrorHandling;
 
 public static class ErrorHttpExtensions
 {
-    /// <summary>Maps a business <see cref="Error"/> to a ProblemDetails HTTP result.</summary>
+    /// <summary>Mapea un <see cref="Error"/> de negocio a un resultado HTTP con ProblemDetails.</summary>
     public static IResult ToHttpResult(this Error error)
     {
         var statusCode = error.Code.EndsWith("not_found", StringComparison.Ordinal)
