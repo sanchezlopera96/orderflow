@@ -397,11 +397,3 @@ La construcción se divide en etapas que se pueden probar de forma independiente
   OpenTelemetry a través de los saltos de mensajería.
 - **Publicación de imágenes** a un registro y un `HorizontalPodAutoscaler` en Kubernetes.
 - Un diseño de **reserva en dos fases** (reservar y confirmar por separado) si el negocio lo requiriera.
-
-## Autor
-
-**Santiago Sanchez Lopera** — [github.com/sanchezlopera96](https://github.com/sanchezlopera96)
-
-## Licencia
-
-Publicado bajo la [Licencia MIT](LICENSE).
