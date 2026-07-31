@@ -1,6 +1,15 @@
+// URL base de la API. Se deja relativa: en desarrollo el proxy reenvía a la API local y en Docker
+// nginx hace lo mismo, así que el mismo build funciona en ambos sin depender del host ni de CORS.
+const apiBaseUrl = '';
+
 export const environment = {
   production: true,
-  // Vacío = rutas relativas. En dev, el proxy reenvía /orders a la API;
-  // en Docker, nginx hace lo mismo. Así el frontend no depende del host de la API.
-  apiBaseUrl: '',
+  apiBaseUrl,
+  // Rutas de la API centralizadas. Las que llevan parámetro son funciones.
+  api: {
+    orders: `${apiBaseUrl}/orders`,
+    order: (id: string) => `${apiBaseUrl}/orders/${id}`,
+    products: `${apiBaseUrl}/products`,
+    hub: `${apiBaseUrl}/hubs/orders`,
+  },
 };

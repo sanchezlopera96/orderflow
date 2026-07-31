@@ -2,7 +2,7 @@ import { computed, inject, Injectable, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { catchError, merge, Observable, of, Subject, switchMap, tap, timer } from 'rxjs';
 import * as signalR from '@microsoft/signalr';
-import { API_BASE_URL } from '../config/api.config';
+import { API_ROUTES } from '../config/api.config';
 import { CreateOrderRequest, Order, Product } from '../models/order.model';
 import { OrderService } from './order.service';
 
@@ -19,7 +19,7 @@ const POLL_INTERVAL_MS = 10000;
 @Injectable({ providedIn: 'root' })
 export class OrdersStore {
   private readonly orderService = inject(OrderService);
-  private readonly hubUrl = `${inject(API_BASE_URL)}/hubs/orders`;
+  private readonly hubUrl = inject(API_ROUTES).hub;
 
   private readonly _orders = signal<Order[]>([]);
   private readonly _loading = signal(true);

@@ -1,8 +1,10 @@
 import { InjectionToken } from '@angular/core';
 import { environment } from '../../../environments/environment';
 
-/** URL base de la API. Se inyecta para poder cambiarla sin tocar los servicios. */
-export const API_BASE_URL = new InjectionToken<string>('API_BASE_URL', {
+/** Rutas de la API, tomadas del ambiente. Se inyectan para no armar URLs en los servicios. */
+export type ApiRoutes = typeof environment.api;
+
+export const API_ROUTES = new InjectionToken<ApiRoutes>('API_ROUTES', {
   providedIn: 'root',
-  factory: () => environment.apiBaseUrl,
+  factory: () => environment.api,
 });
