@@ -20,6 +20,9 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Inventory\Inventory.Domain\OrderFlow.Inventory.Domain.csproj" />
     <ProjectReference Include="..\..\src\Inventory\Inventory.Infrastructure\OrderFlow.Inventory.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Orders\Orders.Domain\OrderFlow.Orders.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Orders\Orders.Infrastructure\OrderFlow.Orders.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Orders\Orders.Api\OrderFlow.Orders.Api.csproj" />
     <ProjectReference Include="..\..\src\BuildingBlocks\OrderFlow.BuildingBlocks.csproj" />
   </ItemGroup>
 

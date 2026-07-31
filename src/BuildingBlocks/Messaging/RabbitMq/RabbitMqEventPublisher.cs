@@ -23,15 +23,18 @@ public sealed class RabbitMqEventPublisher(
     public async Task PublishAsync<TEvent>(TEvent integrationEvent, CancellationToken cancellationToken = default)
         where TEvent : IntegrationEvent
     {
-        var routingKey = IntegrationEventRouting.RoutingKeyFor(typeof(TEvent));
-        var body = JsonSerializer.SerializeToUtf8Bytes(integrationEvent, integrationEvent.GetType(), MessagingJson.Options);
+        // Se enruta por el tipo en runtime (no el genérico TEvent), para que también funcione al
+        // publicar eventos reconstruidos desde el outbox como IntegrationEvent.
+        var eventType = integrationEvent.GetType();
+        var routingKey = IntegrationEventRouting.RoutingKeyFor(eventType);
+        var body = JsonSerializer.SerializeToUtf8Bytes(integrationEvent, eventType, MessagingJson.Options);
 
         var properties = new BasicProperties
         {
             Persistent = true,
             ContentType = "application/json",
             MessageId = integrationEvent.EventId.ToString(),
-            Type = typeof(TEvent).Name,
+            Type = eventType.Name,
         };
 
         await _gate.WaitAsync(cancellationToken);
@@ -53,7 +56,7 @@ public sealed class RabbitMqEventPublisher(
 
         logger.LogInformation(
             "Evento {EventType} publicado con routing key {RoutingKey} (EventId {EventId})",
-            typeof(TEvent).Name,
+            eventType.Name,
             routingKey,
             integrationEvent.EventId);
     }

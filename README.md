@@ -184,8 +184,8 @@ dotnet run --project src/Orders/Orders.Api
 
 La API aplica las migraciones al arrancar (crea las tablas y siembra el catálogo) y publica
 `OrderCreated` al crear un pedido. Si el broker no está disponible en ese momento, el pedido se
-crea igual y queda en `Pending` (el fallo se registra); un outbox transaccional sería la evolución
-robusta. Endpoints:
+crea igual y queda en `Pending`. El evento no se pierde: se guarda en el **outbox** en la misma
+transacción que el pedido y el despachador lo publica cuando el broker vuelve. Endpoints:
 
 | Método | Ruta | Descripción |
 | --- | --- | --- |
@@ -306,10 +306,11 @@ O, al revés, solo las unitarias (sin Docker): `dotnet test --filter Category!=I
 - **Inventory caído o lento.** El pedido queda en `Pending`. `OrderCreated` espera en la cola
   durable y se procesa cuando el worker se recupera; la entrega at-least-once más el consumidor
   idempotente hacen que reprocesar sea seguro. Sin pérdida de mensajes.
-- **Broker caído cuando Orders publica.** Es el problema de dual-write: el pedido ya está
-  persistido como `Pending`, pero el evento no salió. El manejo pragmático es recuperación
-  automática de conexión más registrar el fallo sin romper la petición (el pedido queda `Pending`).
-  La evolución robusta es un **transactional outbox** — ver [ADR 0005](docs/adr/0005-idempotent-consumer-inbox.md).
+- **Broker caído cuando Orders publica.** Es el problema de dual-write, resuelto con un
+  **outbox transaccional**: el evento `OrderCreated` se guarda en la tabla `outbox_messages` en la
+  **misma transacción** que el pedido, y un despachador (`OutboxDispatcher`) lo publica después con
+  reintentos. Así el evento nunca se pierde, aunque el broker esté caído al crear el pedido — ver
+  [ADR 0007](docs/adr/0007-transactional-outbox.md).
 - **Entrega duplicada** (at-least-once). El consumidor de Inventory mantiene un **inbox** por
   `EventId`; el descuento de stock y el registro del evento se guardan en una misma transacción, así
   que un evento repetido nunca descuenta dos veces. Se puede demostrar reenviando el mismo mensaje
@@ -365,6 +366,7 @@ Detalle y notas de diseño en [`k8s/README.md`](k8s/README.md).
 | [0004](docs/adr/0004-database-per-service.md) | Una base de datos PostgreSQL por servicio |
 | [0005](docs/adr/0005-idempotent-consumer-inbox.md) | Consumidor idempotente mediante el inbox pattern |
 | [0006](docs/adr/0006-github-flow.md) | GitHub Flow en vez de Git Flow completo |
+| [0007](docs/adr/0007-transactional-outbox.md) | Outbox transaccional para publicar de forma confiable |
 
 ## Roadmap
 
@@ -381,9 +383,6 @@ La construcción se divide en etapas que se pueden probar de forma independiente
 
 ## Qué haría distinto con más tiempo
 
-- **Transactional outbox** en la Orders API para cerrar el hueco de dual-write: persistir el evento
-  en la misma transacción del pedido y despacharlo con un publisher aparte, en vez de publicar
-  best-effort tras el commit.
 - **Dead-letter queue** con reintentos acotados (backoff) para los mensajes que fallan de forma
   persistente, en lugar de reencolar indefinidamente.
 - **Tests de integración con Testcontainers** (PostgreSQL + RabbitMQ reales) para cubrir el flujo de
