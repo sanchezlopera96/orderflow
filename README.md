@@ -86,7 +86,7 @@ sequenceDiagram
 | Validación | FluentValidation |
 | Front end | Angular 20 (standalone components, signals, reactive forms) |
 | Tiempo real | SignalR (con polling de respaldo) |
-| Pruebas | xUnit, FluentAssertions, coverlet |
+| Pruebas | xUnit, FluentAssertions, coverlet, Testcontainers |
 | Runtime | Docker, Docker Compose |
 | Orquestación | Kubernetes (manifiestos), nginx (frontend) |
 
@@ -280,6 +280,26 @@ validación del formulario:
 ```bash
 cd frontend && npm test    # requiere Chrome
 ```
+
+### Pruebas de integración (Testcontainers)
+
+Verifican el comportamiento contra **infraestructura real** levantada en contenedores durante la
+ejecución (requieren Docker corriendo):
+
+- **PostgreSQL real** — idempotencia con la restricción de unicidad del inbox (incluida la carrera
+  de un mismo evento en paralelo) y **concurrencia optimista** sobre el mismo SKU sin lost updates;
+  cosas que el proveedor en memoria no puede reproducir.
+- **RabbitMQ real** — round-trip completo: el publisher publica un `OrderCreated` y un consumidor lo
+  recibe desde el topic exchange.
+
+Están marcadas con el trait `Integration`, así que el `dotnet test` de arriba (unitarias) no las
+necesita. Para correr solo las de integración (con Docker):
+
+```bash
+dotnet test --filter Category=Integration
+```
+
+O, al revés, solo las unitarias (sin Docker): `dotnet test --filter Category!=Integration`.
 
 ## Manejo de fallos
 

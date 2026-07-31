@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>OrderFlow.IntegrationTests</RootNamespace>
+    <AssemblyName>OrderFlow.IntegrationTests</AssemblyName>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="FluentAssertions" />
+    <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="Testcontainers.PostgreSql" />
+    <PackageReference Include="Testcontainers.RabbitMq" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Inventory\Inventory.Domain\OrderFlow.Inventory.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Inventory\Inventory.Infrastructure\OrderFlow.Inventory.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\BuildingBlocks\OrderFlow.BuildingBlocks.csproj" />
+  </ItemGroup>
+
+</Project>
