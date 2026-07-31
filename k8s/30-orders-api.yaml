@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: orders-api
+  namespace: orderflow
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: orders-api
+  template:
+    metadata:
+      labels:
+        app: orders-api
+    spec:
+      containers:
+        - name: orders-api
+          image: orderflow-orders-api:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: ASPNETCORE_ENVIRONMENT
+              valueFrom:
+                configMapKeyRef: { name: orderflow-config, key: ASPNETCORE_ENVIRONMENT }
+            - name: ASPNETCORE_URLS
+              value: "http://+:8080"
+            - name: Database__ConnectionString
+              valueFrom:
+                secretKeyRef: { name: orderflow-secrets, key: orders-db-connection }
+            - name: RabbitMq__HostName
+              valueFrom:
+                configMapKeyRef: { name: orderflow-config, key: RabbitMq__HostName }
+            - name: RabbitMq__ExchangeName
+              valueFrom:
+                configMapKeyRef: { name: orderflow-config, key: RabbitMq__ExchangeName }
+            - name: RabbitMq__UserName
+              valueFrom:
+                configMapKeyRef: { name: orderflow-config, key: RabbitMq__UserName }
+            - name: RabbitMq__Password
+              valueFrom:
+                secretKeyRef: { name: orderflow-secrets, key: rabbitmq-password }
+          # Aprovechan el endpoint /health real (chequea PostgreSQL + RabbitMQ).
+          readinessProbe:
+            httpGet: { path: /health, port: 8080 }
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /health, port: 8080 }
+            initialDelaySeconds: 30
+            periodSeconds: 15
+          resources:
+            requests: { cpu: "100m", memory: "128Mi" }
+            limits: { cpu: "500m", memory: "512Mi" }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: orders-api
+  namespace: orderflow
+spec:
+  selector:
+    app: orders-api
+  ports:
+    - port: 8080
+      targetPort: 8080

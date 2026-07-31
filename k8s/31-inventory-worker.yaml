@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: inventory-worker
+  namespace: orderflow
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: inventory-worker
+  template:
+    metadata:
+      labels:
+        app: inventory-worker
+    spec:
+      containers:
+        - name: inventory-worker
+          image: orderflow-inventory-worker:latest
+          imagePullPolicy: IfNotPresent
+          # El worker no expone HTTP, así que no lleva probes de liveness/readiness HTTP.
+          # Es idempotente y reintenta ante fallos, por lo que reiniciarlo siempre es seguro.
+          env:
+            - name: DOTNET_ENVIRONMENT
+              valueFrom:
+                configMapKeyRef: { name: orderflow-config, key: DOTNET_ENVIRONMENT }
+            - name: Database__ConnectionString
+              valueFrom:
+                secretKeyRef: { name: orderflow-secrets, key: inventory-db-connection }
+            - name: RabbitMq__HostName
+              valueFrom:
+                configMapKeyRef: { name: orderflow-config, key: RabbitMq__HostName }
+            - name: RabbitMq__ExchangeName
+              valueFrom:
+                configMapKeyRef: { name: orderflow-config, key: RabbitMq__ExchangeName }
+            - name: RabbitMq__UserName
+              valueFrom:
+                configMapKeyRef: { name: orderflow-config, key: RabbitMq__UserName }
+            - name: RabbitMq__Password
+              valueFrom:
+                secretKeyRef: { name: orderflow-secrets, key: rabbitmq-password }
+          resources:
+            requests: { cpu: "100m", memory: "128Mi" }
+            limits: { cpu: "500m", memory: "512Mi" }
