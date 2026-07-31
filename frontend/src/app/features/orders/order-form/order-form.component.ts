@@ -15,7 +15,7 @@ import { OrdersStore } from '../../../core/services/orders-store';
 })
 export class OrderFormComponent {
   private readonly fb = inject(FormBuilder);
-  private readonly store = inject(OrdersStore);
+  protected readonly store = inject(OrdersStore);
 
   protected readonly submitting = signal(false);
   protected readonly serverError = signal<string | null>(null);

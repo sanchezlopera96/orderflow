@@ -22,3 +22,8 @@ export interface ApiProblem {
   detail?: string;
   errors?: Record<string, string[]>;
 }
+
+export interface Product {
+  sku: string;
+  name: string;
+}
