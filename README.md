@@ -194,6 +194,7 @@ transacción que el pedido y el despachador lo publica cuando el broker vuelve. 
 | `POST` | `/orders` | Crea un pedido (`201`, o `400` si los datos son inválidos) |
 | `GET` | `/orders` | Lista los pedidos con su estado |
 | `GET` | `/orders/{id}` | Detalle de un pedido (`404` si no existe) |
+| `GET` | `/products` | Lista el catálogo de productos |
 | `GET` | `/health` | Liveness |
 
 En `Development` el documento OpenAPI queda en `/openapi/v1.json`. El archivo
@@ -395,9 +396,9 @@ La construcción se divide en etapas que se pueden probar de forma independiente
   punta a punta y la idempotencia bajo concurrencia real, además de los tests unitarios actuales.
 - **Observabilidad**: logging estructurado con correlación por `EventId`/`OrderId` y trazas con
   OpenTelemetry a través de los saltos de mensajería.
-- **CI** (build + test + análisis) y publicación de imágenes; `HorizontalPodAutoscaler` en k8s.
-- **Catálogo como endpoint** (`GET /products`) para que el frontend ofrezca los SKUs en un desplegable
-  en vez de texto libre, y un pequeño diseño de reserva en dos fases si el negocio lo requiriera.
+- **Publicación de imágenes** a un registro y un `HorizontalPodAutoscaler` en Kubernetes.
+- Un diseño de **reserva en dos fases** (reservar y confirmar por separado) si el negocio lo requiriera,
+  y una **dead-letter queue** con reintentos acotados para mensajes que fallan de forma persistente.
 
 ## Autor
 

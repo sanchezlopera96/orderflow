@@ -24,9 +24,15 @@
       formControlName="sku"
       autocomplete="off"
       placeholder="ABC-01"
+      list="sku-options"
       [class.field__input--invalid]="showError('sku', 'required')"
     />
-    <p class="field__hint">Disponibles: ABC-01, DEF-02, GHI-03</p>
+    <datalist id="sku-options">
+      @for (product of store.products(); track product.sku) {
+        <option [value]="product.sku">{{ product.name }}</option>
+      }
+    </datalist>
+    <p class="field__hint">Elige del catálogo o escribe un SKU</p>
     @if (showError('sku', 'required')) {
       <p class="field__error">El SKU es obligatorio.</p>
     }

@@ -3,7 +3,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { catchError, merge, Observable, of, Subject, switchMap, tap, timer } from 'rxjs';
 import * as signalR from '@microsoft/signalr';
 import { API_BASE_URL } from '../config/api.config';
-import { CreateOrderRequest, Order } from '../models/order.model';
+import { CreateOrderRequest, Order, Product } from '../models/order.model';
 import { OrderService } from './order.service';
 
 /**
@@ -24,12 +24,14 @@ export class OrdersStore {
   private readonly _orders = signal<Order[]>([]);
   private readonly _loading = signal(true);
   private readonly _error = signal<string | null>(null);
+  private readonly _products = signal<Product[]>([]);
   private readonly refresh$ = new Subject<void>();
 
   readonly orders = this._orders.asReadonly();
   readonly loading = this._loading.asReadonly();
   readonly error = this._error.asReadonly();
   readonly isEmpty = computed(() => !this._loading() && this._orders().length === 0);
+  readonly products = this._products.asReadonly();
 
   constructor() {
     merge(timer(0, POLL_INTERVAL_MS), this.refresh$)
@@ -53,6 +55,7 @@ export class OrdersStore {
       });
 
     this.connectRealtime();
+    this.loadProducts();
   }
 
   refresh(): void {
@@ -76,6 +79,17 @@ export class OrdersStore {
     connection.start().catch(() => {
       // Si SignalR no puede conectar, el polling de respaldo mantiene la lista al día.
     });
+  }
+
+  /** Carga el catálogo una vez, para poblar las sugerencias de SKU del formulario. */
+  private loadProducts(): void {
+    this.orderService
+      .getProducts()
+      .pipe(
+        catchError(() => of([] as Product[])),
+        takeUntilDestroyed(),
+      )
+      .subscribe((products) => this._products.set(products));
   }
 
   /** Inserta o reemplaza un pedido por id, manteniendo el orden por fecha de creación descendente. */

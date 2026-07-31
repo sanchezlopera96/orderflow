@@ -4,6 +4,11 @@
     "secure": false,
     "changeOrigin": true
   },
+  "/products": {
+    "target": "http://localhost:5080",
+    "secure": false,
+    "changeOrigin": true
+  },
   "/hubs": {
     "target": "http://localhost:5080",
     "secure": false,

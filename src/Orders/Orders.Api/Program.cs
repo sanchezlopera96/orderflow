@@ -30,6 +30,7 @@ builder.Services.AddDbContext<OrdersDbContext>((serviceProvider, options) =>
 
 builder.Services.AddValidatorsFromAssemblyContaining<CreateOrderRequestValidator>();
 builder.Services.AddScoped<OrderService>();
+builder.Services.AddScoped<ProductService>();
 
 // Publisher real de RabbitMQ (reemplaza al no-op de la etapa anterior).
 builder.Services.AddRabbitMqMessaging(builder.Configuration);
@@ -68,6 +69,7 @@ if (app.Environment.IsDevelopment())
 app.MapHealthChecks("/health");
 app.MapHub<OrdersHub>("/hubs/orders");
 app.MapOrderEndpoints();
+app.MapCatalogEndpoints();
 
 await app.ApplyMigrationsAsync();
 
