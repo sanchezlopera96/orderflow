@@ -1,5 +1,7 @@
 # OrderFlow
 
+[![CI](https://github.com/sanchezlopera96/orderflow/actions/workflows/ci.yml/badge.svg)](https://github.com/sanchezlopera96/orderflow/actions/workflows/ci.yml)
+
 Sistema distribuido para una tienda en línea: cada pedido reserva inventario antes de
 confirmarse. Los pedidos se crean desde un panel web, la reserva de stock ocurre de forma
 asíncrona, y el panel refleja el estado resultante (`Confirmed` o `Rejected`).
@@ -300,6 +302,10 @@ dotnet test --filter Category=Integration
 ```
 
 O, al revés, solo las unitarias (sin Docker): `dotnet test --filter Category!=Integration`.
+
+En cada push y pull request a `main`, **GitHub Actions** compila y corre todo automáticamente:
+las pruebas unitarias, las de integración (Testcontainers levanta PostgreSQL y RabbitMQ reales en
+el runner) y el build del frontend. La configuración está en [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
 
 ## Manejo de fallos
 
