@@ -387,18 +387,16 @@ La construcción se divide en etapas que se pueden probar de forma independiente
 6. **Front end** — panel en Angular (formulario + lista con polling). ✅
 7. **Docker** — imágenes multi-stage y `docker compose up`. ✅
 8. **Cierre** — README final, tiempo real con SignalR y manifiestos de Kubernetes. ✅
+9. **Mejoras adicionales** — outbox transaccional, tests de integración con Testcontainers, CI en GitHub Actions y endpoint de catálogo. ✅
 
 ## Qué haría distinto con más tiempo
 
 - **Dead-letter queue** con reintentos acotados (backoff) para los mensajes que fallan de forma
   persistente, en lugar de reencolar indefinidamente.
-- **Tests de integración con Testcontainers** (PostgreSQL + RabbitMQ reales) para cubrir el flujo de
-  punta a punta y la idempotencia bajo concurrencia real, además de los tests unitarios actuales.
 - **Observabilidad**: logging estructurado con correlación por `EventId`/`OrderId` y trazas con
   OpenTelemetry a través de los saltos de mensajería.
 - **Publicación de imágenes** a un registro y un `HorizontalPodAutoscaler` en Kubernetes.
-- Un diseño de **reserva en dos fases** (reservar y confirmar por separado) si el negocio lo requiriera,
-  y una **dead-letter queue** con reintentos acotados para mensajes que fallan de forma persistente.
+- Un diseño de **reserva en dos fases** (reservar y confirmar por separado) si el negocio lo requiriera.
 
 ## Autor
 
