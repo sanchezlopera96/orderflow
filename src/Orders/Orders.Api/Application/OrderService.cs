@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using OrderFlow.BuildingBlocks.Events;
-using OrderFlow.BuildingBlocks.Messaging;
 using OrderFlow.BuildingBlocks.Results;
 using OrderFlow.Orders.Api.Realtime;
 using OrderFlow.Orders.Domain;
@@ -12,7 +11,6 @@ namespace OrderFlow.Orders.Api.Application;
 /// <summary>Orquestación de los casos de uso de pedidos. Los endpoints quedan delgados y delegan aquí.</summary>
 public sealed class OrderService(
     OrdersDbContext dbContext,
-    IEventPublisher eventPublisher,
     IOrderNotifier orderNotifier,
     ILogger<OrderService> logger)
 {
@@ -29,28 +27,14 @@ public sealed class OrderService(
 
         var order = Order.Create(request.CustomerName, request.Sku, request.Quantity);
 
+        // El pedido y el evento se guardan en la MISMA transacción (outbox transaccional): así el
+        // evento nunca se pierde, aunque el broker esté caído. Un despachador aparte lo publica luego.
         dbContext.Orders.Add(order);
+        dbContext.OutboxMessages.Add(
+            OutboxMessage.For(new OrderCreated { OrderId = order.Id, Sku = order.Sku, Quantity = order.Quantity }));
         await dbContext.SaveChangesAsync(cancellationToken);
 
         var response = OrderResponse.From(order);
-
-        try
-        {
-            await eventPublisher.PublishAsync(
-                new OrderCreated { OrderId = order.Id, Sku = order.Sku, Quantity = order.Quantity },
-                cancellationToken);
-        }
-        catch (Exception exception)
-        {
-            // El pedido ya quedó persistido como Pending. Si el broker no está disponible, lo dejamos
-            // en Pending y registramos el fallo en lugar de romper la petición; un outbox transaccional
-            // sería la evolución robusta (ver ADR 0005).
-            logger.LogError(
-                exception,
-                "No se pudo publicar OrderCreated para el pedido {OrderId}; queda en Pending",
-                order.Id);
-        }
-
         await orderNotifier.OrderChangedAsync(response, cancellationToken);
 
         logger.LogInformation(

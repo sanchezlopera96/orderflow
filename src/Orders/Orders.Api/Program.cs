@@ -9,6 +9,7 @@ using OrderFlow.Orders.Api.Endpoints;
 using OrderFlow.Orders.Api.ErrorHandling;
 using OrderFlow.Orders.Api.Messaging;
 using OrderFlow.Orders.Api.Realtime;
+using OrderFlow.Orders.Infrastructure.Messaging;
 using OrderFlow.Orders.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -36,6 +37,10 @@ builder.Services.AddRabbitMqMessaging(builder.Configuration);
 // Consumidor de resultados de stock: confirma o rechaza el pedido.
 builder.Services.AddScoped<StockResultHandler>();
 builder.Services.AddHostedService<StockResultConsumer>();
+
+// Outbox transaccional: el evento se guarda con el pedido y este despachador lo publica.
+builder.Services.AddScoped<OutboxProcessor>();
+builder.Services.AddHostedService<OutboxDispatcher>();
 
 // Tiempo real: empuja los cambios de pedido a los clientes por SignalR.
 builder.Services

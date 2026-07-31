@@ -9,6 +9,8 @@ public sealed class OrdersDbContext(DbContextOptions<OrdersDbContext> options) :
 
     public DbSet<Product> Products => Set<Product>();
 
+    public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(OrdersDbContext).Assembly);

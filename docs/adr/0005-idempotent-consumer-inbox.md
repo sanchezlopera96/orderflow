@@ -25,4 +25,4 @@ no-op.
 
 - Las entregas duplicadas son demostrablemente seguras (cubiertas por pruebas).
 - El dual-write al publicar se maneja de forma pragmática (recuperación de conexión) por ahora; un
-  transactional outbox es la evolución documentada.
+  transactional outbox (ADR 0007) elimina esa ventana.
