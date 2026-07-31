@@ -1,0 +1,19 @@
+# Opcional: requiere un ingress controller (p. ej. ingress-nginx) en el clúster.
+# Sin él, se accede al panel con: kubectl -n orderflow port-forward svc/frontend 4200:80
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: orderflow
+  namespace: orderflow
+spec:
+  rules:
+    - host: orderflow.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: 80

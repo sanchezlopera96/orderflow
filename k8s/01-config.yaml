@@ -1,0 +1,26 @@
+# Configuración no sensible, compartida por los servicios.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: orderflow-config
+  namespace: orderflow
+data:
+  ASPNETCORE_ENVIRONMENT: "Production"
+  DOTNET_ENVIRONMENT: "Production"
+  RabbitMq__HostName: "rabbitmq"
+  RabbitMq__UserName: "guest"
+  RabbitMq__ExchangeName: "orderflow"
+---
+# Secretos. En un entorno real esto vendría de un gestor de secretos (Sealed Secrets, Vault, etc.),
+# no versionado en el repo. Aquí van en claro (stringData) solo para el ejercicio.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: orderflow-secrets
+  namespace: orderflow
+type: Opaque
+stringData:
+  postgres-password: "postgres"
+  rabbitmq-password: "guest"
+  orders-db-connection: "Host=orders-db;Port=5432;Database=orders;Username=postgres;Password=postgres"
+  inventory-db-connection: "Host=inventory-db;Port=5432;Database=inventory;Username=postgres;Password=postgres"

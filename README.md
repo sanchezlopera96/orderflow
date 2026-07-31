@@ -7,9 +7,8 @@ asíncrona, y el panel refleja el estado resultante (`Confirmed` o `Rejected`).
 Es un monorepo con dos servicios de backend que se comunican **de forma asíncrona sobre
 RabbitMQ**, una base de datos PostgreSQL por servicio y un front end en Angular.
 
-> **Estado del proyecto.** La solución se construye por etapas independientes que siempre
-> compilan (ver [Roadmap](#roadmap)). Este documento crece en cada etapa; la experiencia de
-> `docker compose up` con un solo comando llega en la etapa de Docker.
+> **Inicio rápido:** con Docker instalado, `docker compose up --build` levanta todo el sistema y
+> el panel queda en http://localhost:4200. Detalle en [Cómo ejecutar](#cómo-ejecutar).
 
 ---
 
@@ -23,6 +22,8 @@ RabbitMQ**, una base de datos PostgreSQL por servicio y un front end en Angular.
 - [Configuración](#configuración)
 - [Pruebas](#pruebas)
 - [Manejo de fallos](#manejo-de-fallos)
+- [Despliegue en Kubernetes](#despliegue-en-kubernetes)
+- [Bonus](#bonus)
 - [Decisiones de arquitectura (ADR)](#decisiones-de-arquitectura-adr)
 - [Roadmap](#roadmap)
 - [Qué haría distinto con más tiempo](#qué-haría-distinto-con-más-tiempo)
@@ -72,8 +73,7 @@ sequenceDiagram
         MQ->>API: entrega StockRejected
         API->>API: Pending -> Rejected
     end
-    FE->>API: GET /orders (polling)
-    API-->>FE: pedido con estado actualizado
+    API-->>FE: OrderChanged (SignalR, tiempo real)
 ```
 
 ## Stack tecnológico
@@ -85,8 +85,10 @@ sequenceDiagram
 | Persistencia | PostgreSQL, Entity Framework Core (una base de datos por servicio) |
 | Validación | FluentValidation |
 | Front end | Angular 20 (standalone components, signals, reactive forms) |
+| Tiempo real | SignalR (con polling de respaldo) |
 | Pruebas | xUnit, FluentAssertions, coverlet |
 | Runtime | Docker, Docker Compose |
+| Orquestación | Kubernetes (manifiestos), nginx (frontend) |
 
 ## Estructura de la solución
 
@@ -105,7 +107,10 @@ OrderFlow.sln
 ├── tests/
 │   ├── Orders.Tests/
 │   └── Inventory.Tests/
+├── frontend/                        # Panel en Angular 20 (nginx en producción)
+├── k8s/                             # Manifiestos de Kubernetes
 ├── docs/adr/                        # Architecture Decision Records
+├── docker-compose.yml               # Levanta todo el sistema con un comando
 ├── Directory.Build.props            # Configuración común (net10.0, nullable, warnings-as-errors)
 └── Directory.Packages.props         # Gestión centralizada de versiones de paquetes
 ```
@@ -248,31 +253,87 @@ de .NET para las secciones anidadas.
 
 La topología es un topic exchange durable `orderflow` con routing keys `order.created`,
 `stock.reserved` y `stock.rejected`. Los mensajes se publican como persistentes y la conexión
-tiene recuperación automática. Las colas y sus bindings las declara cada consumidor (Inventory y
-Orders) en las etapas siguientes.
+tiene recuperación automática. Cada consumidor declara su propia cola durable: `inventory.order-created`
+(Inventory) y `orders.stock-results` (Orders). El worker toma la misma configuración con la clave
+`Database__ConnectionString` apuntando a su propia base.
 
 ## Pruebas
 
-Las pruebas apuntan a la lógica crítica: validación de entrada, transiciones de estado del pedido
-e idempotencia del consumidor. Corren con un solo comando:
+Las pruebas de backend (xUnit + FluentAssertions) apuntan a la lógica crítica y corren con un solo
+comando, sin necesidad de base de datos ni broker:
 
 ```bash
 dotnet test
 ```
 
-Las pruebas del front end (Angular) se agregan junto con el front end.
+Cubren:
+
+- **Validación** de la creación de pedidos (`clienteNombre` no vacío, SKU obligatorio, cantidad 1–100).
+- **Máquina de estados** del pedido: `Pending → Confirmed/Rejected`, transiciones ilegales e idempotencia por estado.
+- **Idempotencia del consumidor**: procesar el mismo `OrderCreated` dos veces descuenta stock una sola vez.
+- **Reserva de stock**: reserva exitosa, stock insuficiente y SKU inexistente.
+- **Contrato de mensajería**: serialización de eventos (camelCase) y routing keys.
+
+Las pruebas del frontend (Angular, opcionales) verifican el contrato HTTP del servicio y la
+validación del formulario:
+
+```bash
+cd frontend && npm test    # requiere Chrome
+```
 
 ## Manejo de fallos
 
-Los dos escenarios de fallo exigidos se abordan así (se amplían en etapas posteriores):
-
 - **Inventory caído o lento.** El pedido queda en `Pending`. `OrderCreated` espera en la cola
   durable y se procesa cuando el worker se recupera; la entrega at-least-once más el consumidor
-  idempotente hacen que reprocesar sea seguro.
-- **Broker caído cuando Orders publica.** Es el problema de dual-write. El manejo pragmático es
-  recuperación automática de conexión más exponer el fallo; la evolución robusta es un
-  transactional outbox, documentado en
-  [ADR 0005](docs/adr/0005-idempotent-consumer-inbox.md) y en el roadmap.
+  idempotente hacen que reprocesar sea seguro. Sin pérdida de mensajes.
+- **Broker caído cuando Orders publica.** Es el problema de dual-write: el pedido ya está
+  persistido como `Pending`, pero el evento no salió. El manejo pragmático es recuperación
+  automática de conexión más registrar el fallo sin romper la petición (el pedido queda `Pending`).
+  La evolución robusta es un **transactional outbox** — ver [ADR 0005](docs/adr/0005-idempotent-consumer-inbox.md).
+- **Entrega duplicada** (at-least-once). El consumidor de Inventory mantiene un **inbox** por
+  `EventId`; el descuento de stock y el registro del evento se guardan en una misma transacción, así
+  que un evento repetido nunca descuenta dos veces. Se puede demostrar reenviando el mismo mensaje
+  desde la consola de RabbitMQ: el log muestra `Evento ... ya procesado; se ignora`.
+- **Resultado de stock duplicado o fuera de orden** llegando a Orders. Lo absorbe la máquina de
+  estados: un resultado se aplica solo mientras el pedido está en `Pending`; una transición ilegal
+  se registra y se ignora.
+- **Concurrencia sobre el mismo SKU.** Dos mensajes que reservan el mismo producto a la vez se
+  resuelven con concurrencia optimista (columna de versión): uno falla y el consumidor reintenta
+  recargando el stock.
+- **Mensaje veneno** (no deserializa). Se descarta con `nack` sin requeue para no bloquear la cola;
+  un fallo transitorio, en cambio, se reencola (`nack` con requeue) para reintentarlo.
+
+## Despliegue en Kubernetes
+
+La carpeta [`k8s/`](k8s/) trae los manifiestos para desplegar el sistema completo —los dos
+servicios, el broker y las dos bases— con `Deployment` + `Service` + `ConfigMap` + `Secret` + `PVC`,
+`liveness`/`readiness` probes y límites de recursos. La Orders API y el frontend usan probes
+`httpGet` (la API contra el `/health` real, que chequea PostgreSQL y RabbitMQ).
+
+No se necesita un clúster para evaluar el diseño; para probarlo en local (minikube, kind o Docker
+Desktop):
+
+```bash
+# 1) construir las imágenes (ver k8s/README.md para cargarlas al clúster)
+docker build -t orderflow-orders-api:latest       -f src/Orders/Orders.Api/Dockerfile .
+docker build -t orderflow-inventory-worker:latest -f src/Inventory/Inventory.Worker/Dockerfile .
+docker build -t orderflow-frontend:latest         ./frontend
+
+# 2) aplicar y acceder
+kubectl apply -f k8s/
+kubectl -n orderflow port-forward svc/frontend 4200:80   # http://localhost:4200
+```
+
+Detalle y notas de diseño en [`k8s/README.md`](k8s/README.md).
+
+## Bonus
+
+- **.NET 10** — backend idiomático en la plataforma principal de la empresa.
+- **Docker** — `docker compose up` levanta todo con un comando (requisito obligatorio, pero también
+  con imágenes multi-stage livianas).
+- **Kubernetes** — manifiestos del despliegue completo con probes y límites (ver arriba).
+- **Tiempo real** — el panel se actualiza por **SignalR** (push instantáneo) en lugar de solo
+  polling, con un polling de respaldo de 10 s por resiliencia.
 
 ## Decisiones de arquitectura (ADR)
 
@@ -296,12 +357,22 @@ La construcción se divide en etapas que se pueden probar de forma independiente
 5. **Consumidor de Orders** — reacciona a los resultados de stock, aplica las transiciones de estado. ✅
 6. **Front end** — panel en Angular (formulario + lista con polling). ✅
 7. **Docker** — imágenes multi-stage y `docker compose up`. ✅
-8. Cierre del README, más manifiestos de Kubernetes y SignalR opcionales.
+8. **Cierre** — README final, tiempo real con SignalR y manifiestos de Kubernetes. ✅
 
 ## Qué haría distinto con más tiempo
 
-Se registra aquí a medida que el proyecto crece (transactional outbox, manejo de dead-letter,
-actualización en tiempo real con SignalR, observabilidad más rica).
+- **Transactional outbox** en la Orders API para cerrar el hueco de dual-write: persistir el evento
+  en la misma transacción del pedido y despacharlo con un publisher aparte, en vez de publicar
+  best-effort tras el commit.
+- **Dead-letter queue** con reintentos acotados (backoff) para los mensajes que fallan de forma
+  persistente, en lugar de reencolar indefinidamente.
+- **Tests de integración con Testcontainers** (PostgreSQL + RabbitMQ reales) para cubrir el flujo de
+  punta a punta y la idempotencia bajo concurrencia real, además de los tests unitarios actuales.
+- **Observabilidad**: logging estructurado con correlación por `EventId`/`OrderId` y trazas con
+  OpenTelemetry a través de los saltos de mensajería.
+- **CI** (build + test + análisis) y publicación de imágenes; `HorizontalPodAutoscaler` en k8s.
+- **Catálogo como endpoint** (`GET /products`) para que el frontend ofrezca los SKUs en un desplegable
+  en vez de texto libre, y un pequeño diseño de reserva en dos fases si el negocio lo requiriera.
 
 ## Autor
 
